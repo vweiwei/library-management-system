@@ -1,0 +1,32 @@
+version: '3.1'
+services:
+  mongodb:                    # 服务名称，自定义，不能有重复，本服务是docker hub已创建服务
+    container_name: mongo_classroom    # 容器名称，自定义，不能有重复
+    image: mongo              # 镜像，不指定版本，从hub上拉取latest版本，指定版本mongo:版本号
+    ports:                    # 宿主机port:docker容器port，外部访问要通过宿主机port
+      - 8017:27017
+    environment:              # 设置docker容器环境变量，根据hub 镜像说明
+       - MONGO_INITDB_ROOT_USERNAME=root
+       - MONGO_INITDB_ROOT_PASSWORD=123456
+  flask:                             # 自建flask服务
+    container_name: flask   # 自定义容器名称
+    build: .                         # docker-compose.yml所在文件夹，去查找Dockerfile，构建镜像
+    ports:
+      - 5000:5000
+    command: python classroom/serve.py    # docker启动后，运行flask程序
+    depends_on:                                     # 需要依赖mongodb
+      - mongodb
+    environment:                                    # 通过环境变量为程序传入基础设置
+      - mongo_uri=mongodb://root:123456@mongodb:27017
+      #- mongo_uri=mongodb://localhost:27017
+      - mongodb_name=ClassroomManager
+    deploy:                                         # 设置该服务占用资源
+      resources:
+        limits:               # 设置容器的资源限制
+          cpus: "0.5"         # 设置该容器最多只能使用 50% 的 CPU
+          memory: 1G
+  frontend: # 自建flask服务
+    container_name: frontend   # 自定义容器名称
+    build: /root/frontend                        # docker-compose.yml所在文件夹，去查找Dockerfile，构建镜像
+    ports:
+      - 9090:80
